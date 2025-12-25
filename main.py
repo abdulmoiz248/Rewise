@@ -43,21 +43,38 @@ client = genai.Client(api_key=os.getenv("GOOGLE_API_KEY"))
 
 model_id = "gemini-2.5-flash"
 
-PROMPT = """You are an expert quiz maker. Generate 5-10 MCQs with 4 options (A-D), correct answer, and short explanation. Avoid repeating questions.
 
-Given the following text, generate MCQs:
+
+
+PROMPT = """
+You are a senior interviewer and subject-matter expert.
+Your task is to generate **challenging, interview-level MCQs** that test deep understanding, not memorization.
+
+Rules:
+- Generate **5–10 MCQs**
+- Each MCQ must require reasoning, comparison, or application of concepts
+- Avoid factual or definition-based questions
+- Prefer "why", "what happens if", edge cases, trade-offs, or scenario-based questions
+- Include **plausible distractors** (wrong options should sound correct to non-experts)
+- Do NOT repeat concepts across questions
+- Do NOT ask trivial or surface-level questions
+
+Input text is study notes, not a question bank. Extract concepts and test understanding.
 
 Text:
 {input_text}
 
-Output format:
-Q1: Question?
-A) ...
-B) ...
-C) ...
-D) ...
+Output format (strict):
+Q1: <Interview-style question>
+A) <option>
+B) <option>
+C) <option>
+D) <option>
 Answer: <LETTER>
-Explanation: <short>
+Explanation: <why this option is correct, 1–2 lines max>
+
+Quality bar:
+If a beginner can answer it without thinking, the question is too easy.
 """
 
 # ───────────────────────────────────────────
@@ -170,5 +187,5 @@ update_dashboard(dashboard_page_id, pages, TRACKING_PAGE_ID)
 print(f"✅ {mcq_count} MCQs generated from '{page_title}'")
 print(f"   📤 Questions sent to Discord")
 print(f"   📝 Full answers logged in Notion")
-print(f"   📊 Tracking updated")
+print(f"    Tracking updated")
 print(f"   📈 Dashboard refreshed")

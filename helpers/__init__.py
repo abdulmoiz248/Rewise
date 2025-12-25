@@ -258,6 +258,14 @@ def select_page_for_review(pages: List[Dict[str, Any]], tracking_page_id: str) -
     tracking_data = get_page_tracking_data(tracking_page_id)
     current_date = datetime.now()
     
+    # Define special pages to skip
+    SPECIAL_PAGES = [
+        "rewise", 
+        "review tracker", 
+        " rewise dashboard",
+        "rewise dashboard"
+    ]
+    
     # Score each page
     page_scores = []
     for page in pages:
@@ -269,7 +277,8 @@ def select_page_for_review(pages: List[Dict[str, Any]], tracking_page_id: str) -
         if title_prop and title_prop.get("title"):
             title = title_prop["title"][0]["plain_text"]
         
-        if title.lower() in ["rewise", "review tracker"]:
+        # Check if title matches any special page (case-insensitive)
+        if any(special.lower() in title.lower() or title.lower() in special.lower() for special in SPECIAL_PAGES):
             continue
         
         if page_id in tracking_data:

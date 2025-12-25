@@ -18,7 +18,7 @@ load_dotenv()
 
 def main():
     """Update the dashboard with latest metrics"""
-    print("📊 Updating Rewise Dashboard...")
+    print(" Updating Rewise Dashboard...")
     
     # Get all pages and tracking page
     pages = get_database_pages()

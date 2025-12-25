@@ -35,7 +35,7 @@ def get_or_create_dashboard_page() -> Optional[str]:
         title = ""
         if title_prop and title_prop.get("title"):
             title = title_prop["title"][0]["plain_text"]
-        if title.lower() in ["📊 rewise dashboard", "rewise dashboard"]:
+        if title.lower() in [" rewise dashboard", "rewise dashboard"]:
             return p["id"]
     
     # Create page if not exists
@@ -43,7 +43,7 @@ def get_or_create_dashboard_page() -> Optional[str]:
     body = {
         "parent": {"database_id": DB_ID},
         "properties": {
-            "Name": {"title": [{"text": {"content": "📊 Rewise Dashboard"}}]}
+            "Name": {"title": [{"text": {"content": " Rewise Dashboard"}}]}
         }
     }
     new_page = requests.post(create_url, headers=HEADERS, json=body).json()
@@ -56,6 +56,14 @@ def calculate_dashboard_metrics(pages: List[Dict[str, Any]], tracking_page_id: s
     current_date = datetime.now()
     week_ago = current_date - timedelta(days=7)
     
+    # Define special pages to skip
+    SPECIAL_PAGES = [
+        "rewise", 
+        "review tracker", 
+        "rewise dashboard",
+        "rewise dashboard"
+    ]
+    
     # Filter out special pages
     regular_pages = []
     for page in pages:
@@ -63,7 +71,9 @@ def calculate_dashboard_metrics(pages: List[Dict[str, Any]], tracking_page_id: s
         title = ""
         if title_prop and title_prop.get("title"):
             title = title_prop["title"][0]["plain_text"]
-        if title.lower() not in ["rewise", "review tracker", "📊 rewise dashboard", "rewise dashboard"]:
+        
+        # Check if title matches any special page (case-insensitive)
+        if not any(special.lower() in title.lower() or title.lower() in special.lower() for special in SPECIAL_PAGES):
             regular_pages.append(page)
     
     total_pages = len(regular_pages)
@@ -198,7 +208,7 @@ def update_dashboard(dashboard_page_id: str, pages: List[Dict[str, Any]], tracki
         "heading_1": {
             "rich_text": [{
                 "type": "text",
-                "text": {"content": "📊 Rewise Dashboard"},
+                "text": {"content": " Rewise Dashboard"},
                 "annotations": {"bold": True}
             }]
         }
@@ -326,7 +336,7 @@ def update_dashboard(dashboard_page_id: str, pages: List[Dict[str, Any]], tracki
         "heading_2": {
             "rich_text": [{
                 "type": "text",
-                "text": {"content": "📊 Visual Analytics"},
+                "text": {"content": " Visual Analytics"},
                 "annotations": {"bold": True}
             }]
         }
@@ -403,7 +413,7 @@ def update_dashboard(dashboard_page_id: str, pages: List[Dict[str, Any]], tracki
         "paragraph": {
             "rich_text": [{
                 "type": "text",
-                "text": {"content": "📊 Review Status Distribution"},
+                "text": {"content": " Review Status Distribution"},
                 "annotations": {"bold": True}
             }]
         }
