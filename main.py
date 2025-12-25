@@ -19,6 +19,11 @@ from helpers import (
     update_page_tracking
 )
 
+from dashboard_helpers import (
+    get_or_create_dashboard_page,
+    update_dashboard
+)
+
 load_dotenv()
 
 DISCORD_WEBHOOK = os.getenv("DISCORD_WEBHOOK_URL")
@@ -156,7 +161,14 @@ append_to_rewise_formatted(page_title, full_with_answers, REWISE_PAGE_ID)
 # ───────────────────────────────────────────
 update_page_tracking(TRACKING_PAGE_ID, pid, page_title, mcq_count)
 
+# ───────────────────────────────────────────
+# Update dashboard
+# ───────────────────────────────────────────
+dashboard_page_id = get_or_create_dashboard_page()
+update_dashboard(dashboard_page_id, pages, TRACKING_PAGE_ID)
+
 print(f"✅ {mcq_count} MCQs generated from '{page_title}'")
 print(f"   📤 Questions sent to Discord")
 print(f"   📝 Full answers logged in Notion")
 print(f"   📊 Tracking updated")
+print(f"   📈 Dashboard refreshed")
