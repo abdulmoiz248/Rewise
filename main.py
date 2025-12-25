@@ -11,7 +11,12 @@ from helpers import (
     get_database_pages,
     get_page_content,
     extract_text,
-    append_to_rewise
+    get_or_create_tracking_page,
+    select_page_for_review,
+    clean_ai_response,
+    parse_mcqs,
+    append_to_rewise_formatted,
+    update_page_tracking
 )
 
 load_dotenv()
@@ -78,18 +83,22 @@ def get_or_create_rewise_page():
     return new_page["id"]
 
 REWISE_PAGE_ID = get_or_create_rewise_page()
+TRACKING_PAGE_ID = get_or_create_tracking_page()
 
 # ───────────────────────────────────────────
-# Pick one random page from database
+# Smart page selection (not random)
 # ───────────────────────────────────────────
 pages = get_database_pages()
 if not pages:
     raise Exception("No pages found in database!")
 
-random_page = random.choice(pages)
-pid = random_page["id"]
+selected_page = select_page_for_review(pages, TRACKING_PAGE_ID)
+if not selected_page:
+    raise Exception("No suitable page found for review!")
 
-title_prop = random_page["properties"].get("Name") or random_page["properties"].get("Title")
+pid = selected_page["id"]
+
+title_prop = selected_page["properties"].get("Name") or selected_page["properties"].get("Title")
 page_title = (
     title_prop["title"][0]["plain_text"]
     if title_prop and title_prop.get("title")
@@ -111,22 +120,43 @@ response = client.models.generate_content(
     contents=prompt,
     config=types.GenerateContentConfig(temperature=0.7)
 )
-quiz_output = response.text
+raw_output = response.text
+
+# Clean AI response (remove conversational text)
+quiz_output = clean_ai_response(raw_output)
+
+# Parse MCQs: questions only vs full with answers
+questions_only, full_with_answers = parse_mcqs(quiz_output)
+
+# Count MCQs
+mcq_count = len([line for line in quiz_output.split("\n") if line.strip().startswith(("Q1", "Q2", "Q3", "Q4", "Q5", "Q6", "Q7", "Q8", "Q9", "Q10"))])
 
 # ───────────────────────────────────────────
-# Send to Discord
+# Send to Discord (questions only)
 # ───────────────────────────────────────────
-discord_payload = {
-    "content": f"📚 **Rewise MCQs ({datetime.now().strftime('%Y-%m-%d')}) - {page_title}**\n\n{quiz_output}"
+discord_embed = {
+    "embeds": [{
+        "title": f"📚 Rewise Daily Quiz - {page_title}",
+        "description": questions_only,
+        "color": 5814783,  # Blue color
+        "footer": {
+            "text": f"📅 {datetime.now().strftime('%B %d, %Y')} • {mcq_count} Questions"
+        }
+    }]
 }
-requests.post(DISCORD_WEBHOOK, json=discord_payload)
+requests.post(DISCORD_WEBHOOK, json=discord_embed)
 
 # ───────────────────────────────────────────
-# Append to Notion Rewise page
+# Append to Notion Rewise page (with answers)
 # ───────────────────────────────────────────
-append_to_rewise(
-    f"📚 **Rewise MCQs ({datetime.now().strftime('%Y-%m-%d')}) - {page_title}**\n{quiz_output}",
-    REWISE_PAGE_ID
-)
+append_to_rewise_formatted(page_title, full_with_answers, REWISE_PAGE_ID)
 
-print(f"✅ MCQs generated from '{page_title}' and sent to Discord + Notion")
+# ───────────────────────────────────────────
+# Update tracking
+# ───────────────────────────────────────────
+update_page_tracking(TRACKING_PAGE_ID, pid, page_title, mcq_count)
+
+print(f"✅ {mcq_count} MCQs generated from '{page_title}'")
+print(f"   📤 Questions sent to Discord")
+print(f"   📝 Full answers logged in Notion")
+print(f"   📊 Tracking updated")
